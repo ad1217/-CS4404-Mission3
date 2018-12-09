@@ -27,18 +27,18 @@ def set_and_accept(packet_in, pkt):
     packet_in.accept()
 
 def setup_queues(cb_input, cb_output):
-    nfqueue_input = NetfilterQueue()
-    nfqueue_input.bind(0, cb_input)
-    nfqueue_output = NetfilterQueue()
-    nfqueue_output.bind(1, cb_output)
+    def route_packet(packet_in):
+        if packet_in.get_mark() == 0x42:
+            cb_input(packet_in)
+        else:
+            cb_output(packet_in)
+
+    nfqueue = NetfilterQueue()
+    nfqueue.bind(0, route_packet)
     try:
         print("[*] waiting for data")
-        # TODO: better handling of ^C
-        thread_input = Thread(target=nfqueue_input.run, daemon=True)
-        thread_input.start()
-        nfqueue_output.run()
+        nfqueue.run()
     except KeyboardInterrupt:
-        pass
-
-    nfqueue_input.unbind()
-    nfqueue_output.unbind()
+        print('Got ^C, cleaning up')
+    finally:
+        nfqueue.unbind()
