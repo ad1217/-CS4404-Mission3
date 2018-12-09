@@ -4,6 +4,7 @@ from netfilterqueue import NetfilterQueue
 from scapy.all import *
 
 MAGIC = 0x42 # a magic identifying number
+MSG_LEN = 16 # bytes to append/get from the end of a packet
 
 def safety_check():
     # A list of MAC addresses on which this is allowed to run
@@ -17,6 +18,17 @@ def safety_check():
     if uuid.getnode() not in TEAM16_VMS_MAC:
         print("Don't be evil!")
         exit(1)
+
+def add_message(pkt, message):
+    pkt = pkt/Raw(load=message.rjust(MSG_LEN, '\0'))
+    pkt.len += MSG_LEN
+    return pkt
+
+def get_message(pkt):
+    msg = bytes(pkt[TCP].payload)[-MSG_LEN:]
+    pkt[TCP].payload = Raw(bytes(pkt[TCP].payload)[:-MSG_LEN])
+    pkt.len -= MSG_LEN
+    return msg
 
 def set_and_accept(packet_in, pkt):
     # force a checksum recalc
