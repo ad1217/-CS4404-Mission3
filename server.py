@@ -26,8 +26,8 @@ def callback_output(packet_in):
     print(happy_hosts)
     if pkt.dst in happy_hosts and TCP in pkt:
         if pkt[TCP].flags.S and pkt[TCP].flags.A and pkt.dst in happy_hosts: # matching Syn/Ack
+            print('Sending a magic SYN/ACK')
             pkt.id = MAGIC
-            print('sending a magic SYN/ACK')
             happy_hosts[pkt.dst] = pkt[TCP].seq + len(pkt[TCP].payload) + 1
 
     set_and_accept(packet_in, pkt)

@@ -25,8 +25,8 @@ def callback_output(packet_in):
             pkt.id = MAGIC
 
         elif pkt[TCP].flags.A and happy_hosts[pkt.dst] == pkt[TCP].ack: # matching ACK
-            pkt.id = MAGIC
             print('Sending a happy ACK')
+            pkt.id = MAGIC
 
     set_and_accept(packet_in, pkt)
 
