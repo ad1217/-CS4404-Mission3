@@ -38,7 +38,7 @@ def get_message(pkt):
 
     # verify signature
     if verify_message(data):
-        print('got a new command!', data[1:MSG_LEN].decode('ascii'))
+        print('got a new command!', data[0], data[1:MSG_LEN].decode('ascii'))
         return data
     else:
         print('verification failed!')
@@ -77,3 +77,12 @@ def setup_queues(cb_input, cb_output):
         print('Got ^C, cleaning up')
     finally:
         nfqueue.unbind()
+
+def load_file():
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'rb') as f:
+            msg = f.read()
+            if verify_message(msg):
+                return msg
+
+    return False

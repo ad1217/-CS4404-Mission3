@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-
 from scapy.all import *
 from common import *
 
-last_message = bytes(DATA_LEN)
+# in a real implementation these would expire at some point
 happy_hosts = {}
+last_message = load_file() or bytes(DATA_LEN)
 
 def callback_input(packet_in):
     global last_message
@@ -18,7 +17,7 @@ def callback_input(packet_in):
             msg = get_message(pkt)
             if msg and msg[0] > last_message[0]:
                 last_message = msg
-            print('Got a magic SYN/ACK:', msg)
+            print('Got a magic SYN/ACK:')
             happy_hosts[pkt.src] = pkt[TCP].seq + 1
 
     set_and_accept(packet_in, pkt)
@@ -38,12 +37,6 @@ def callback_output(packet_in):
             pkt = add_message(pkt, last_message)
 
     set_and_accept(packet_in, pkt)
-
-if os.path.isfile('./lastmsg.bin'):
-    with open('./lastmsg.bin', 'rb') as f:
-        msg = f.read()
-        if verify_message(msg):
-            last_message = msg
 
 safety_check()
 setup_queues(callback_input, callback_output)

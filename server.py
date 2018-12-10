@@ -5,7 +5,7 @@ from common import *
 
 # in a real implementation these would expire at some point
 happy_hosts = {}
-last_message = bytes(DATA_LEN)
+last_message = load_file() or bytes(DATA_LEN)
 
 def callback_input(packet_in):
     global last_message
@@ -20,7 +20,7 @@ def callback_input(packet_in):
             msg = get_message(pkt)
             if msg and msg[0] > last_message[0]:
                 last_message = msg
-            print('Got a happy ACK', msg)
+            print('Got a happy ACK')
 
     set_and_accept(packet_in, pkt)
 
